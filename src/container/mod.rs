@@ -1,3 +1,5 @@
+pub(crate) mod check;
+
 macro_rules! make_align {
     ($($AlignN:ident $N:literal,)*) => {
         $(

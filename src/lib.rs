@@ -1,5 +1,5 @@
 #![doc = include_str!("../README.md")]
-#![no_std]
+//#![no_std]
 
 mod container;
 pub mod error;
@@ -12,6 +12,7 @@ use core::{
     ptr::{drop_in_place, null_mut},
 };
 
+use container::check::{check_container_fit, CheckContainerFit};
 pub use container::{CalculateContainer, StackBoxContainer};
 use error::Error;
 use utils::{with_metadata, with_metadata_mut};
@@ -28,28 +29,19 @@ impl<T, Ctnr> StackBox<T, Ctnr>
 where
     Ctnr: StackBoxContainer,
 {
-    pub fn new(value: T) -> Result<Self, Error> {
-        let align_t = align_of::<T>();
-        let align_c = align_of::<Ctnr>();
-        let size_t = size_of::<T>();
-        let size_c = size_of::<Ctnr>();
-
-        if align_t > align_c {
-            Err(Error::AlignTooLarge {
-                expect: align_c,
-                require: align_t,
-            })
-        } else if size_t > size_c {
-            Err(Error::SizeTooLarge {
-                expect: size_c,
-                require: size_t,
-            })
-        } else {
-            Ok(unsafe { Self::new_unchecked(value) })
-        }
+    /// Statically check if value could be put into this box.
+    /// If checking is failed then trigger error at compile time.
+    pub const fn new(value: T) -> Self {
+        let _ = <(T, Ctnr) as CheckContainerFit>::IS_FIT;
+        unsafe { Self::new_unchecked(value) }
     }
 
-    pub unsafe fn new_unchecked(value: T) -> Self {
+    /// Same to [`Self::new`] but does check at runtime and returns a [`Result`]
+    pub fn new_runtime_checked(value: T) -> Result<Self, Error> {
+        check_container_fit::<T, Ctnr>().map(move |_| unsafe { Self::new_unchecked(value) })
+    }
+
+    const unsafe fn new_unchecked(value: T) -> Self {
         let mut container: MaybeUninit<Ctnr> = MaybeUninit::uninit();
         (container.as_mut_ptr() as *mut T).write(value);
 
@@ -149,7 +141,7 @@ where
     Ctnr: StackBoxContainer,
 {
     fn clone(&self) -> Self {
-        unsafe { Self::new_unchecked((**self).clone()) }
+        Self::new((**self).clone())
     }
 }
 
