@@ -11,7 +11,7 @@ fn main() {
     assert!(U32Box::new([0u32; 4]).is_none()); // size too large
     assert!(U32Box::new(0u64).is_none()); // align too large
 
-    let arr: [U32Box<dyn Debug>; 2] = [coerce!(u8_box, dyn Debug), coerce!(u32_box, dyn Debug)];
+    let arr: [U32Box<dyn Debug>; 2] = [coerce!(u8_box), coerce!(u32_box)];
 
     for x in arr {
         dbg!(&*x);

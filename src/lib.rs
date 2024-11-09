@@ -46,7 +46,7 @@ where
     pub fn coerce_unsized<U, F>(this: Self, check_fn: F) -> StackBox<U, Ctnr>
     where
         U: ?Sized,
-        F: Fn(&mut UnsizeChecker<U, T>),
+        F: Fn(&mut UnsizeChecker<U, T>) -> &mut UnsizeChecker<U, U>,
     {
         let mut this = ManuallyDrop::new(this);
 
@@ -56,8 +56,12 @@ where
             src: value,
         };
 
-        // even if this function panics, the value could properly drop
-        check_fn(&mut checker);
+        {
+            // even if this function panics, the value could properly drop
+            let returned_checker = check_fn(&mut checker);
+            // we could not assume the returned checker is which we provide
+            returned_checker.ptr = Some(&raw mut returned_checker.src);
+        }
 
         let Some(reinterpreter) = checker.ptr else {
             panic!("checking of the unsize checker is not passed");
@@ -84,22 +88,13 @@ where
     }
 }
 
-pub struct UnsizeChecker<Target, Src = Target>
+pub struct UnsizeChecker<Target, Src>
 where
     Target: ?Sized,
     Src: ?Sized,
 {
     ptr: Option<*mut Target>,
     src: Src,
-}
-
-impl<T> UnsizeChecker<T, T>
-where
-    T: ?Sized,
-{
-    pub fn set_checked(&mut self) {
-        self.ptr = Some(&raw mut self.src);
-    }
 }
 
 impl<T, Ctnr> Deref for StackBox<T, Ctnr>

@@ -13,9 +13,7 @@ macro_rules! FitStackBox {
 
 #[macro_export]
 macro_rules! coerce {
-    ($sb:expr, $Target: ty) => {
-        $crate::StackBox::coerce_unsized($sb, |checker| {
-            (checker as &mut $crate::UnsizeChecker<$Target, _>).set_checked()
-        })
+    ($sb:expr) => {
+        $crate::StackBox::coerce_unsized($sb, |checker| checker as &mut _)
     };
 }
