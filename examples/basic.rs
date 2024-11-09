@@ -5,7 +5,7 @@ use stack_box::{coerce, error::Error, FitStackBox};
 type U32Box<T> = FitStackBox!(T, [u32; 3]);
 
 fn main() {
-    let u8_box = U32Box::new(16u16).unwrap(); // ok
+    let u16_box = U32Box::new(16u16).unwrap(); // ok
     let u32_box = U32Box::new([32u32; 3]).unwrap(); // ok
 
     assert!(matches!(
@@ -18,7 +18,7 @@ fn main() {
         Err(Error::AlignTooLarge { .. })
     ));
 
-    let arr: [U32Box<dyn Debug>; 2] = [coerce!(u8_box), coerce!(u32_box)];
+    let arr: [U32Box<dyn Debug>; 2] = [coerce!(u16_box), coerce!(u32_box)];
 
     for x in arr {
         dbg!(&*x);
