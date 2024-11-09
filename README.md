@@ -27,3 +27,5 @@ fn main() {
     }
 }
 ```
+
+The expansion of `coerce` macro is also safe rust code.
