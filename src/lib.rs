@@ -1,6 +1,8 @@
+#![doc = include_str!("../README.md")]
 #![no_std]
 
 mod container;
+pub mod error;
 mod macros;
 mod utils;
 
@@ -11,6 +13,7 @@ use core::{
 };
 
 pub use container::{CalculateContainer, StackBoxContainer};
+use error::Error;
 use utils::{with_metadata, with_metadata_mut};
 
 pub struct StackBox<T, Ctnr>
@@ -25,11 +28,24 @@ impl<T, Ctnr> StackBox<T, Ctnr>
 where
     Ctnr: StackBoxContainer,
 {
-    pub fn new(value: T) -> Option<Self> {
-        if align_of::<T>() > align_of::<Ctnr>() || size_of::<T>() > size_of::<Ctnr>() {
-            None
+    pub fn new(value: T) -> Result<Self, Error> {
+        let align_t = align_of::<T>();
+        let align_c = align_of::<Ctnr>();
+        let size_t = size_of::<T>();
+        let size_c = size_of::<Ctnr>();
+
+        if align_t > align_c {
+            Err(Error::AlignTooLarge {
+                expect: align_c,
+                require: align_t,
+            })
+        } else if size_t > size_c {
+            Err(Error::SizeTooLarge {
+                expect: size_c,
+                require: size_t,
+            })
         } else {
-            Some(unsafe { Self::new_unchecked(value) })
+            Ok(unsafe { Self::new_unchecked(value) })
         }
     }
 

@@ -6,4 +6,7 @@ edition = "2021"
 license-file = "./LICENSE"
 repository = "https://github.com/Fancyflame/stack_box.git"
 rust-version = "1.82"
-version = "1.0.0"
+version = "1.0.1"
+
+[dependencies]
+thiserror = "2.0"
