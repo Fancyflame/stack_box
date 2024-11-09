@@ -1,6 +1,9 @@
 [package]
-edition = "2021"
 name = "stack_box"
-version = "0.1.0"
-
-[dependencies]
+description = "store unsize struct on stack"
+author = ["Fancyflame<fancyflame@163.com>"]
+edition = "2021"
+license-file = "./LICENSE"
+repository = "https://github.com/Fancyflame/stack_box.git"
+rust-version = "1.82"
+version = "1.0.0"
