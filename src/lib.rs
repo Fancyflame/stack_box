@@ -1,5 +1,8 @@
 #![doc = include_str!("../README.md")]
-//#![no_std]
+#![cfg_attr(feature = "no_std", no_std)]
+
+#[cfg(not(feature = "no_std"))]
+pub mod auto_box;
 
 mod container;
 pub mod error;
@@ -7,11 +10,13 @@ mod macros;
 mod utils;
 
 use core::{
+    borrow::{Borrow, BorrowMut},
+    cell::UnsafeCell,
+    hash::Hash,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
     ptr::{drop_in_place, null_mut},
 };
-use std::cell::UnsafeCell;
 
 use container::check::{check_container_fit, CheckContainerFit};
 pub use container::{CalculateContainer, StackBoxContainer};
@@ -38,8 +43,11 @@ where
     }
 
     /// Same to [`Self::new`] but does check at runtime and returns a [`Result`]
-    pub fn new_runtime_checked(value: T) -> Result<Self, Error> {
-        check_container_fit::<T, Ctnr>().map(move |_| unsafe { Self::new_unchecked(value) })
+    pub const fn new_runtime_checked(value: T) -> Result<Self, (T, Error)> {
+        match check_container_fit::<T, Ctnr>() {
+            Ok(()) => Ok(unsafe { Self::new_unchecked(value) }),
+            Err(err) => Err((value, err)),
+        }
     }
 
     const unsafe fn new_unchecked(value: T) -> Self {
@@ -138,6 +146,9 @@ where
     }
 }
 
+unsafe impl<T, Ctnr> Send for StackBox<T, Ctnr> where T: Send + ?Sized {}
+unsafe impl<T, Ctnr> Sync for StackBox<T, Ctnr> where T: Sync + ?Sized {}
+
 impl<T, Ctnr> Clone for StackBox<T, Ctnr>
 where
     T: Clone,
@@ -176,5 +187,52 @@ where
 {
     fn cmp(&self, other: &Self) -> core::cmp::Ordering {
         (**self).cmp(&**other)
+    }
+}
+
+impl<T, Ctnr> Borrow<T> for StackBox<T, Ctnr>
+where
+    T: ?Sized,
+{
+    fn borrow(&self) -> &T {
+        &**self
+    }
+}
+
+impl<T, Ctnr> BorrowMut<T> for StackBox<T, Ctnr>
+where
+    T: ?Sized,
+{
+    fn borrow_mut(&mut self) -> &mut T {
+        &mut **self
+    }
+}
+
+impl<T, U, Ctnr> AsRef<U> for StackBox<T, Ctnr>
+where
+    T: AsRef<U> + ?Sized,
+    U: ?Sized,
+{
+    fn as_ref(&self) -> &U {
+        (**self).as_ref()
+    }
+}
+
+impl<T, U, Ctnr> AsMut<U> for StackBox<T, Ctnr>
+where
+    T: AsMut<U> + ?Sized,
+    U: ?Sized,
+{
+    fn as_mut(&mut self) -> &mut U {
+        (**self).as_mut()
+    }
+}
+
+impl<T, Ctnr> Hash for StackBox<T, Ctnr>
+where
+    T: Hash + ?Sized,
+{
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        (**self).hash(state);
     }
 }
