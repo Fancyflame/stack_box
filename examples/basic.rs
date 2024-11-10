@@ -10,6 +10,7 @@ fn main() {
 
     // U32Box::new(0u64); // panic at compile time
     // U32Box::new([0u32; 4]); // panic at compile time
+
     assert!(U32Box::new_runtime_checked(0u64).is_err()); // align too large
     assert!(U32Box::new_runtime_checked([0u32; 4]).is_err()); // size too large
 

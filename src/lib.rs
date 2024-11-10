@@ -7,21 +7,22 @@ mod macros;
 mod utils;
 
 use core::{
-    mem::{ManuallyDrop, MaybeUninit},
+    mem::MaybeUninit,
     ops::{Deref, DerefMut},
     ptr::{drop_in_place, null_mut},
 };
+use std::cell::UnsafeCell;
 
 use container::check::{check_container_fit, CheckContainerFit};
 pub use container::{CalculateContainer, StackBoxContainer};
 use error::Error;
-use utils::{with_metadata, with_metadata_mut};
+use utils::with_metadata;
 
 pub struct StackBox<T, Ctnr>
 where
     T: ?Sized,
 {
-    container: MaybeUninit<Ctnr>,
+    container: UnsafeCell<MaybeUninit<Ctnr>>,
     reinterpreter: *const T,
 }
 
@@ -46,19 +47,19 @@ where
         (container.as_mut_ptr() as *mut T).write(value);
 
         Self {
-            container,
+            container: UnsafeCell::new(container),
             reinterpreter: null_mut(),
         }
     }
 
-    pub fn coerce_unsized<U, F>(this: Self, check_fn: F) -> StackBox<U, Ctnr>
+    pub fn coerce_unsized<U, F>(mut this: Self, check_fn: F) -> StackBox<U, Ctnr>
     where
         U: ?Sized,
         F: Fn(&mut UnsizeChecker<U, T>) -> &mut UnsizeChecker<U, U>,
     {
-        let mut this = ManuallyDrop::new(this);
+        let value: T = unsafe { Self::as_ptr(&mut this).read() };
+        core::mem::forget(this);
 
-        let value: T = unsafe { this.container.as_mut_ptr().cast::<T>().read() };
         let mut checker = UnsizeChecker {
             ptr: None,
             src: value,
@@ -81,7 +82,7 @@ where
         }
 
         StackBox {
-            container,
+            container: UnsafeCell::new(container),
             reinterpreter,
         }
     }
@@ -91,8 +92,9 @@ impl<T, Ctnr> StackBox<T, Ctnr>
 where
     T: ?Sized,
 {
-    pub fn as_ptr(this: &mut Self) -> *mut T {
-        with_metadata_mut(this.container.as_mut_ptr().cast(), this.reinterpreter)
+    pub fn as_ptr(this: &Self) -> *mut T {
+        let ctnr_ptr: *mut MaybeUninit<Ctnr> = this.container.get();
+        with_metadata(ctnr_ptr.cast(), this.reinterpreter)
     }
 }
 
@@ -111,7 +113,8 @@ where
 {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        unsafe { &*with_metadata(self.container.as_ptr().cast(), self.reinterpreter) }
+        let ctnr_ptr: *mut MaybeUninit<Ctnr> = self.container.get();
+        unsafe { &*with_metadata(ctnr_ptr.cast(), self.reinterpreter) }
     }
 }
 

@@ -1,13 +1,13 @@
 [package]
 name = "stack_box"
-description = "store unsize struct on stack"
+description = "store unsize struct on stack with static check"
 documentation = "https://docs.rs/stack_box/latest/stack_box/index.html"
 authors = ["Fancyflame<fancyflame@163.com>"]
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/Fancyflame/stack_box.git"
 rust-version = "1.82"
-version = "1.1.0"
+version = "1.2.0"
 
 [dependencies]
 thiserror = "2.0"
