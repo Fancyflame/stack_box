@@ -37,21 +37,21 @@ where
 {
     /// Statically check if value could be put into this box.
     /// If checking is failed then trigger error at compile time.
-    pub const fn new(value: T) -> Self {
+    pub fn new(value: T) -> Self {
         let _ = <(T, Ctnr) as CheckContainerFit>::IS_FIT;
         unsafe { Self::new_unchecked(value) }
     }
 
     /// Same to [`Self::new`] but does check at runtime and returns a [`Result`]
-    pub const fn new_runtime_checked(value: T) -> Result<Self, (T, Error)> {
+    pub fn new_runtime_checked(value: T) -> Result<Self, (T, Error)> {
         match check_container_fit::<T, Ctnr>() {
             Ok(()) => Ok(unsafe { Self::new_unchecked(value) }),
             Err(err) => Err((value, err)),
         }
     }
 
-    const unsafe fn new_unchecked(value: T) -> Self {
-        let mut container: MaybeUninit<Ctnr> = MaybeUninit::uninit();
+    unsafe fn new_unchecked(value: T) -> Self {
+        let mut container = MaybeUninit::<Ctnr>::uninit();
         (container.as_mut_ptr() as *mut T).write(value);
 
         Self {
