@@ -16,7 +16,7 @@ where
     Ctnr: StackBoxContainer,
 {
     pub fn new(value: T) -> Self {
-        match StackBox::<_, Ctnr>::new_runtime_checked(value) {
+        match StackBox::<_, Ctnr>::new_dynamic(value) {
             Ok(sb) => Self::Stack(sb),
             Err((value, _)) => Self::Heap(Box::new(value)),
         }

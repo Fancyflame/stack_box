@@ -43,7 +43,7 @@ where
     }
 
     /// Same to [`Self::new`] but does check at runtime and returns a [`Result`]
-    pub fn new_runtime_checked(value: T) -> Result<Self, (T, Error)> {
+    pub fn new_dynamic(value: T) -> Result<Self, (T, Error)> {
         match check_container_fit::<T, Ctnr>() {
             Ok(()) => Ok(unsafe { Self::new_unchecked(value) }),
             Err(err) => Err((value, err)),
