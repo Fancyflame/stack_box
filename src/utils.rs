@@ -1,11 +1,10 @@
-use core::marker::PhantomData;
+use core::ptr::null;
 
-pub struct MetadataApplicator<T: ?Sized, U> {
+pub struct MetadataApplicator<T: ?Sized> {
     metadata_pointer: *const T,
-    _cast_is_valid: PhantomData<U>,
 }
 
-impl<T: ?Sized, U> MetadataApplicator<T, U> {
+impl<T: ?Sized> MetadataApplicator<T> {
     pub fn new(metadata_pointer: *const T) -> Self {
         let with_diff_addr: *mut () = (metadata_pointer as *mut ()).wrapping_byte_add(1);
 
@@ -15,19 +14,15 @@ impl<T: ?Sized, U> MetadataApplicator<T, U> {
             panic!("cannot figure out memory layout of the unsize pointer");
         }
 
-        Self {
-            metadata_pointer,
-            _cast_is_valid: PhantomData,
-        }
+        Self { metadata_pointer }
     }
 
-    pub fn new_sized(metadata_pointer: *const T) -> Self
+    pub fn new_sized() -> Self
     where
         T: Sized,
     {
         Self {
-            metadata_pointer,
-            _cast_is_valid: PhantomData,
+            metadata_pointer: null(),
         }
     }
 

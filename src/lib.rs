@@ -15,7 +15,7 @@ use core::{
     hash::Hash,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
-    ptr::{drop_in_place, null},
+    ptr::drop_in_place,
 };
 
 use container::check::{check_container_fit, CheckContainerFit};
@@ -28,7 +28,7 @@ where
     T: ?Sized,
 {
     container: UnsafeCell<MaybeUninit<Ctnr>>,
-    reinterpreter: MetadataApplicator<T, Ctnr>,
+    reinterpreter: MetadataApplicator<T>,
 }
 
 impl<T, Ctnr> StackBox<T, Ctnr>
@@ -56,7 +56,7 @@ where
 
         Self {
             container: UnsafeCell::new(container),
-            reinterpreter: MetadataApplicator::new_sized(null()),
+            reinterpreter: MetadataApplicator::new_sized(),
         }
     }
 
@@ -80,7 +80,7 @@ where
             returned_checker.ptr = Some(&raw mut returned_checker.src);
         }
 
-        let reinterpreter: MetadataApplicator<U, Ctnr> = match checker.ptr {
+        let reinterpreter: MetadataApplicator<U> = match checker.ptr {
             Some(pointer) => {
                 // caution that this function may panic
                 MetadataApplicator::new(pointer)
