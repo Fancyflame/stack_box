@@ -15,20 +15,20 @@ use core::{
     hash::Hash,
     mem::MaybeUninit,
     ops::{Deref, DerefMut},
-    ptr::{drop_in_place, null_mut},
+    ptr::{drop_in_place, null},
 };
 
 use container::check::{check_container_fit, CheckContainerFit};
 pub use container::{CalculateContainer, StackBoxContainer};
 use error::Error;
-use utils::with_metadata;
+use utils::MetadataApplicator;
 
 pub struct StackBox<T, Ctnr>
 where
     T: ?Sized,
 {
     container: UnsafeCell<MaybeUninit<Ctnr>>,
-    reinterpreter: *const T,
+    reinterpreter: MetadataApplicator<T, Ctnr>,
 }
 
 impl<T, Ctnr> StackBox<T, Ctnr>
@@ -56,7 +56,7 @@ where
 
         Self {
             container: UnsafeCell::new(container),
-            reinterpreter: null_mut(),
+            reinterpreter: MetadataApplicator::new_sized(null()),
         }
     }
 
@@ -80,8 +80,12 @@ where
             returned_checker.ptr = Some(&raw mut returned_checker.src);
         }
 
-        let Some(reinterpreter) = checker.ptr else {
-            panic!("checking of the unsize checker is not passed");
+        let reinterpreter: MetadataApplicator<U, Ctnr> = match checker.ptr {
+            Some(pointer) => {
+                // caution that this function may panic
+                MetadataApplicator::new(pointer)
+            }
+            None => panic!("you must return the origin UnsizeChecker or the check will fail"),
         };
 
         let mut container: MaybeUninit<Ctnr> = MaybeUninit::uninit();
@@ -102,7 +106,7 @@ where
 {
     pub fn as_ptr(this: &Self) -> *mut T {
         let ctnr_ptr: *mut MaybeUninit<Ctnr> = this.container.get();
-        with_metadata(ctnr_ptr.cast(), this.reinterpreter)
+        this.reinterpreter.apply_metadata(ctnr_ptr.cast())
     }
 }
 
@@ -121,8 +125,7 @@ where
 {
     type Target = T;
     fn deref(&self) -> &Self::Target {
-        let ctnr_ptr: *mut MaybeUninit<Ctnr> = self.container.get();
-        unsafe { &*with_metadata(ctnr_ptr.cast(), self.reinterpreter) }
+        unsafe { &*Self::as_ptr(self).cast_const() }
     }
 }
 
