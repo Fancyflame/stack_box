@@ -21,6 +21,14 @@ where
             Err((value, _)) => Self::Heap(Box::new(value)),
         }
     }
+
+    pub const fn is_stack(this: &Self) -> bool {
+        matches!(this, Self::Stack(_))
+    }
+
+    pub const fn is_heap(this: &Self) -> bool {
+        matches!(this, Self::Heap(_))
+    }
 }
 
 impl<T: ?Sized, Ctnr> Deref for AutoBox<T, Ctnr> {

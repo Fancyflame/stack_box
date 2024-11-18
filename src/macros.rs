@@ -3,10 +3,17 @@ macro_rules! FitStackBox {
     ($T: ty, $Fit: ty) => {
         $crate::StackBox<
             $T,
-            $crate::CalculateContainer<
-                {::core::mem::align_of::<$Fit>()},
-                {::core::mem::size_of::<$Fit>()},
-            >
+            $crate::FitContainer!($Fit)
+        >
+    };
+}
+
+#[macro_export]
+macro_rules! FitContainer {
+    ($Fit: ty) => {
+        $crate::CalculateContainer<
+            {::core::mem::align_of::<$Fit>()},
+            {::core::mem::size_of::<$Fit>()},
         >
     };
 }

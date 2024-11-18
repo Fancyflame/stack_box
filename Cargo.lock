@@ -42,7 +42,7 @@ dependencies = [
 
 [[package]]
 name = "stack_box"
-version = "1.5.0"
+version = "1.5.1"
 dependencies = [
  "const_format",
  "thiserror",
